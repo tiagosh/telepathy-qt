@@ -550,8 +550,8 @@ public:
     void setAddMembersCallback(const AddMembersCallback &cb);
 
     /* Adds a contact to this group. No-op if already in this group */
-    void addMembers(const Tp::UIntList &handles, const QStringList &identifiers);
-    void removeMembers(const Tp::UIntList &handles);
+    void addMembers(const Tp::UIntList &handles, const QStringList &identifiers, uint actor = 0, ChannelGroupChangeReason changeReason = ChannelGroupChangeReasonNone, const QString &message = QString(), const QString &error = QString(), const QString &debugMessage = QString());
+    void removeMembers(const Tp::UIntList &handles, const QStringList &identifiers = QStringList(), uint actor = 0, ChannelGroupChangeReason changeReason = ChannelGroupChangeReasonNone, const QString &message = QString(), const QString &error = QString(), const QString &debugMessage = QString());
 
 private Q_SLOTS:
 private:

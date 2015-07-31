@@ -1983,13 +1983,14 @@ void BaseChannelGroupInterface::setAddMembersCallback(const AddMembersCallback &
     mPriv->addMembersCB = cb;
 }
 
-void BaseChannelGroupInterface::addMembers(const Tp::UIntList& handles, const QStringList& identifiers)
+void BaseChannelGroupInterface::addMembers(const Tp::UIntList& handles, const QStringList& identifiers, uint actor, ChannelGroupChangeReason changeReason, const QString &message, const QString &error, const QString &debugMessage)
 {
     if (handles.size() != identifiers.size()) {
         debug() << "BaseChannelGroupInterface::addMembers: handles.size() != identifiers.size()";
         return;
     }
     Tp::UIntList added;
+    Tp::HandleIdentifierMap contactIds;
     for (int i = 0; i < handles.size(); ++i) {
         uint handle = handles[i];
         if (mPriv->members.contains(handle))
@@ -1998,24 +1999,80 @@ void BaseChannelGroupInterface::addMembers(const Tp::UIntList& handles, const QS
         mPriv->memberIdentifiers[handle] = identifiers[i];
         mPriv->members.append(handle);
         added.append(handle);
+        contactIds[handle] = identifiers[i];
     }
-    if (!added.isEmpty())
-        QMetaObject::invokeMethod(mPriv->adaptee,"membersChanged",Q_ARG(QString, QString()), Q_ARG(Tp::UIntList, added), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(uint, 0), Q_ARG(uint, ChannelGroupChangeReasonNone)); //Can simply use emit in Qt5
+
+    if (added.isEmpty())
+        return;
+
+    QMetaObject::invokeMethod(mPriv->adaptee, "membersChanged",
+        Q_ARG(QString, message),
+        Q_ARG(Tp::UIntList, added),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(uint, actor),
+        Q_ARG(uint, changeReason)); //Can simply use emit in Qt5
+
+    if (mPriv->flags & Tp::ChannelGroupFlagMembersChangedDetailed) {
+        QVariantMap details;
+        details.insert(QLatin1String("actor"), QVariant::fromValue(actor));
+        details.insert(QLatin1String("change-reason"), QVariant::fromValue((uint)changeReason));
+        details.insert(QLatin1String("contact-ids"), QVariant::fromValue(contactIds));
+        details.insert(QLatin1String("message"), QVariant::fromValue(message));
+        details.insert(QLatin1String("error"), QVariant::fromValue(error));
+        details.insert(QLatin1String("debug-message"), QVariant::fromValue(debugMessage));
+        QMetaObject::invokeMethod(mPriv->adaptee, "membersChangedDetailed",
+            Q_ARG(Tp::UIntList, added),
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(QVariantMap, details));
+    }
 }
 
-void BaseChannelGroupInterface::removeMembers(const Tp::UIntList& handles)
+void BaseChannelGroupInterface::removeMembers(const Tp::UIntList& handles, const QStringList &identifiers, uint actor, ChannelGroupChangeReason changeReason, const QString &message, const QString &error, const QString &debugMessage)
 {
     Tp::UIntList removed;
-    foreach(uint handle, handles) {
+    Tp::HandleIdentifierMap contactIds;
+    for (int i = 0; i < handles.size(); ++i) {
+        uint handle = handles[i];
         if (!mPriv->members.contains(handle))
             continue;
 
         mPriv->memberIdentifiers.remove(handle);
         mPriv->members.removeAll(handle);
         removed.append(handle);
+        contactIds[handle] = identifiers[i];
     }
-    if (!removed.isEmpty())
-        QMetaObject::invokeMethod(mPriv->adaptee,"membersChanged",Q_ARG(QString, QString()), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(Tp::UIntList, removed), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(Tp::UIntList, Tp::UIntList()), Q_ARG(uint, 0), Q_ARG(uint,ChannelGroupChangeReasonNone)); //Can simply use emit in Qt5 //Can simply use emit in Qt5
+
+    if (removed.isEmpty())
+        return;
+
+    QMetaObject::invokeMethod(mPriv->adaptee, "membersChanged",
+        Q_ARG(QString, message),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(Tp::UIntList, removed),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(Tp::UIntList, Tp::UIntList()),
+        Q_ARG(uint, actor),
+        Q_ARG(uint, changeReason)); //Can simply use emit in Qt5
+
+    if (mPriv->flags & Tp::ChannelGroupFlagMembersChangedDetailed) {
+        QVariantMap details;
+        details.insert(QLatin1String("actor"), QVariant::fromValue(actor));
+        details.insert(QLatin1String("change-reason"), QVariant::fromValue((uint)changeReason));
+        details.insert(QLatin1String("contact-ids"), QVariant::fromValue(contactIds));
+        details.insert(QLatin1String("message"), QVariant::fromValue(message));
+        details.insert(QLatin1String("error"), QVariant::fromValue(error));
+        details.insert(QLatin1String("debug-message"), QVariant::fromValue(debugMessage));
+        QMetaObject::invokeMethod(mPriv->adaptee, "membersChangedDetailed",
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(Tp::UIntList, removed),
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(Tp::UIntList, Tp::UIntList()),
+            Q_ARG(QVariantMap, details));
+    }
 }
 
 // Chan.I.Room2
